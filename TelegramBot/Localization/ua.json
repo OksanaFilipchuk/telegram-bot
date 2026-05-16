@@ -1,0 +1,16 @@
+﻿{
+  "StartMessage": "Привіт! Допоможу підрахувати витрати.",
+  "ChooseCategory": "Оберіть категорію:",
+  "NoExpenses": "Незареєстровано витрат",
+  "EnterExpenseAmount": "Введіть суму витрати:",
+  "Groceries": "Продукти",
+  "Utilities": "Комунальні послуги, житло",
+  "Transport": "Транспорт",
+  "Health": "Здоров’я",
+  "Clothing": "Одяг",
+  "Entertainment": "Розваги",
+  "Education": "Освіта",
+  "Services": "Послуги",
+  "Other": "Інше"
+
+}

@@ -1,0 +1,16 @@
+﻿{
+  "StartMessage": "Hi! I'am here to help you with track expenses.",
+  "ChooseCategory": "Choose the Category:",
+  "NoExpenses": "No exepenses registered",
+  "EnterExpenseAmount": "Enter the amount of the expense:",
+  "Groceries": "Groceries",
+  "Utilities": "Utilities",
+  "Transport": "Transport",
+  "Health": "Health",
+  "Clothing": "Clothing",
+  "Entertainment": "Entertainment",
+  "Education": "Education",
+  "Services": "Services",
+  "Other": "Other"
+
+}
