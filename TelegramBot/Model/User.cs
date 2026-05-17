@@ -10,4 +10,5 @@ public class User
     public long TelegramId { get; set; }
     public string? Name { get; set; }
     public Language? Lang { get; set; }
+    public CategoryType? SelectedCategory { get; set; } = null;
 }

@@ -36,13 +36,15 @@ class Program
         botClient.SetMyCommands(commands);
         _dbContext.Database.EnsureCreated();
 
-        botClient.StartReceiving(static async (botClient, update, cancellationToken) =>
+        UserService userService = new(_dbContext);
+        ExpensesService expensesService = new(_dbContext);
+        CategoryService categoryService = new(_dbContext);
+        var handler = new Handler(botClient, userService, expensesService, categoryService);
+
+        botClient.StartReceiving(async (botClient, update, cancellationToken) =>
         {
-            UserService userService = new(_dbContext);
-            ExpensesService expensesService = new(_dbContext);
-            CategoryService categoryService = new(_dbContext);
-            var handler = new Handler(botClient, cancellationToken, userService, expensesService, categoryService);
-            await handler.Handle(update);
+           
+            await handler.Handle(update, cancellationToken);
         }, ErrorHandler);
 
         Console.WriteLine("Press any key to exit");

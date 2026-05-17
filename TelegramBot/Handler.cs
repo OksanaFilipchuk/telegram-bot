@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -11,34 +10,31 @@ namespace TelegramBot;
 
 public class Handler
 {
-    private static CategoryType? currentCategory;
     private static LocalizationServise _localizationService = new LocalizationServise();
     UserService _userService { get; set; }
     ExpensesService _expensesService { get; set; }
     CategoryService _categoryService { get; set; }
     ITelegramBotClient _botClient { get; set; }
-    CancellationToken _cancellationToken { get; set; }
 
-    public Handler(ITelegramBotClient botClient, CancellationToken cancellationToken, UserService userService, ExpensesService expensesService, CategoryService categoryService)
+    public Handler(ITelegramBotClient botClient, UserService userService, ExpensesService expensesService, CategoryService categoryService)
     {
         _botClient = botClient;
-        _cancellationToken = cancellationToken;
         _userService = userService;
         _expensesService = expensesService;
         _categoryService = categoryService;
     }
 
-    public async Task Handle(Update update)
+    public async Task Handle(Update update, CancellationToken cancellationToken)
     {
         if (update.Type == UpdateType.CallbackQuery)
         {
-            await HandleCallbackQueryType(_botClient, update, _cancellationToken);
+            await HandleCallbackQueryType(_botClient, update, cancellationToken);
             return;
         }
         if (update.Type == UpdateType.Message)
 
         {
-            await HandleMessageType(update, _cancellationToken);
+            await HandleMessageType(update, cancellationToken);
             return;
         }
     }
@@ -48,13 +44,11 @@ public class Handler
         var data = update.CallbackQuery.Data;
         if (Enum.TryParse<CategoryType>(data, out var category))
         {
-            currentCategory = category;
+            await _userService.SetSelectedCategory(update, category);
             await botClient.SendMessage(
                 chatId: update.CallbackQuery.Message.Chat.Id,
                 text: _localizationService.Get("EnterExpenseAmount", lang));
         }
-
-
     }
 
 
@@ -100,7 +94,7 @@ public class Handler
                 text: message,
                 parseMode: ParseMode.Html
                 );
- 
+
     }
 
     public async Task HandleAddCommand(Update update)
@@ -136,10 +130,11 @@ public class Handler
         {
             var userId = update.Message.From?.Id;
             var amount = update.Message.Text.ParseAmount();
-            if (currentCategory != null && amount != null && userId is not null)
+            if (amount != null && userId is not null)
             {
                 var user = await _userService.GetOrCreateUser(update);
-                var category = await _categoryService.GetCategory((CategoryType)currentCategory);
+                var selectedCategory = user.SelectedCategory;
+                var category = await _categoryService.GetCategory((CategoryType)selectedCategory);
                 await _expensesService.AddExpense(user, category, amount.Value);
             }
         }

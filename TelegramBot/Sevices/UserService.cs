@@ -1,6 +1,6 @@
 ﻿using Telegram.Bot.Types;
-using TelegramBot.Shared;
 using Telegram.Bot.Types.Enums;
+using TelegramBot.Shared;
 
 namespace TelegramBot.Sevices;
 
@@ -37,5 +37,9 @@ public class UserService
         return user?.Lang ?? Language.UA;
     }
 
-
+    public async Task SetSelectedCategory(Update update, CategoryType category) {
+        var user = await GetOrCreateUser(update);
+        user.SelectedCategory = category;
+        await _context.SaveChangesAsync();
+    }
 }
