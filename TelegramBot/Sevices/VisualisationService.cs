@@ -5,7 +5,7 @@ namespace TelegramBot.Sevices;
 
 public class VisualisationService
 {
-    private static LocalizationServise _localizationService = new LocalizationServise();
+    private static LocalizationService _localizationService = new LocalizationService();
     public static string GetExpanseReportMessage(List<ExpenseReport> expenses, Language lang)
     {
         StringBuilder sb = new StringBuilder();

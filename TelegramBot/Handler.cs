@@ -10,7 +10,7 @@ namespace TelegramBot;
 
 public class Handler
 {
-    private static LocalizationServise _localizationService = new LocalizationServise();
+    private static LocalizationService _localizationService = new LocalizationService();
     UserService _userService { get; set; }
     ExpensesService _expensesService { get; set; }
     CategoryService _categoryService { get; set; }
@@ -40,14 +40,19 @@ public class Handler
     }
     public async Task HandleCallbackQueryType(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        var lang = await _userService.GetUserLang(update);
+        var userLang = await _userService.GetUserLang(update);
         var data = update.CallbackQuery.Data;
         if (Enum.TryParse<CategoryType>(data, out var category))
         {
             await _userService.SetSelectedCategory(update, category);
             await botClient.SendMessage(
                 chatId: update.CallbackQuery.Message.Chat.Id,
-                text: _localizationService.Get("EnterExpenseAmount", lang));
+                text: _localizationService.Get("EnterExpenseAmount", userLang));
+        }
+        if (Enum.TryParse<Language>(data, out var language))
+        {
+            await _userService.SetUserLang(update, (Language)language);
+           
         }
     }
 
@@ -70,6 +75,9 @@ public class Handler
                     break;
                 case Command.Stats:
                     await HandleStatsCommand(update);
+                    break;
+                case Command.Lang:
+                    await HandleLangCommand(update);
                     break;
                 default:
                     await HandleText(update);
@@ -124,6 +132,26 @@ public class Handler
             replyMarkup: keyboard
         );
     }
+
+    public async Task HandleLangCommand(Update update)
+    {
+        var lang = await _userService.GetUserLang(update);
+        var keyboard = new InlineKeyboardMarkup
+        {
+            InlineKeyboard = new[]
+         {
+             new[] { InlineKeyboardButton.WithCallbackData("En", "EN") },
+             new[] { InlineKeyboardButton.WithCallbackData("Укр", "UA") }
+         }
+        };
+
+        await _botClient.SendMessage(chatId: update.Message.Chat.Id,
+            text: _localizationService.Get("ChooseLanguage", lang),
+            replyMarkup: keyboard);
+    }
+
+
+
     public async Task HandleText(Update update)
     {
         if (update.Message is not null)

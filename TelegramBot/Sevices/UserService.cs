@@ -32,12 +32,21 @@ public class UserService
         return user;
     }
 
-    public async Task<Language> GetUserLang(Update update) { 
+    public async Task<Language> GetUserLang(Update update)
+    {
         var user = await GetOrCreateUser(update);
         return user?.Lang ?? Language.UA;
     }
 
-    public async Task SetSelectedCategory(Update update, CategoryType category) {
+    public async Task SetUserLang(Update update, Language lang)
+    {
+        var user = await GetOrCreateUser(update);
+        user.Lang = lang;
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task SetSelectedCategory(Update update, CategoryType category)
+    {
         var user = await GetOrCreateUser(update);
         user.SelectedCategory = category;
         await _context.SaveChangesAsync();

@@ -15,6 +15,7 @@ class Program
         new BotCommand { Command="start", Description="Запустити бота"},
         new BotCommand{ Command="add", Description= "Додати витрати" },
         new BotCommand{ Command="stats", Description= "Статистика за місяць" },
+        new BotCommand{ Command="lang", Description= "Змінити мову" },
 
     };
     private static readonly Context _dbContext = new Context();
@@ -43,7 +44,7 @@ class Program
 
         botClient.StartReceiving(async (botClient, update, cancellationToken) =>
         {
-           
+
             await handler.Handle(update, cancellationToken);
         }, ErrorHandler);
 

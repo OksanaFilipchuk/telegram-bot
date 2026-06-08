@@ -3,10 +3,10 @@ using TelegramBot.Shared;
 
 namespace TelegramBot.Sevices;
 
-public class LocalizationServise
+public class LocalizationService
 {
     Dictionary<string, Dictionary<string, string>> _data = new Dictionary<string, Dictionary<string, string>>();
-    public LocalizationServise()
+    public LocalizationService()
     {
         Load();
     }
@@ -23,10 +23,7 @@ public class LocalizationServise
             }
             string fileContent = File.ReadAllText(path);
             _data.Add(key.ToString().ToLower(), JsonSerializer.Deserialize<Dictionary<string, string>>(fileContent));
-
         }
- 
-
     }
 
     public string Get(string key, Language lang = Language.UA)
