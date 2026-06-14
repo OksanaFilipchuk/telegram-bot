@@ -10,27 +10,41 @@ public class LocalizationService
     {
         Load();
     }
-    private static Dictionary<string, string> langFileLocation = new Dictionary<string, string>(){
+    private static Dictionary<string, string> langFileLocation = new Dictionary<string, string>()
+    {
         [Language.UA.ToString().ToLower()] = "ua.json",
-        [Language.EN.ToString().ToLower()] = "en.json"};
+        [Language.EN.ToString().ToLower()] = "en.json"
+    };
 
-    public void Load() {
-        foreach (var key in langFileLocation.Keys) {
-            var path  = Path.Combine(AppContext.BaseDirectory, "Localization", langFileLocation[key]);
-                if (!File.Exists(path))
-                {
-                    throw new FileNotFoundException($"Localization file for language '{key}' not found at path: {langFileLocation[key]}");
+    public void Load()
+    {
+        foreach (var key in langFileLocation.Keys)
+        {
+            var path = Path.Combine(AppContext.BaseDirectory, "Localization", langFileLocation[key]);
+            if (!File.Exists(path))
+            {
+                throw new FileNotFoundException($"Localization file for language '{key}' not found at path: {langFileLocation[key]}");
             }
             string fileContent = File.ReadAllText(path);
             _data.Add(key.ToString().ToLower(), JsonSerializer.Deserialize<Dictionary<string, string>>(fileContent));
         }
     }
 
-    public string Get(string key, Language lang = Language.UA)
+    public string Get(string key, Language lang = Language.UA, params string[] args)
     {
         if (_data.ContainsKey(lang.ToString().ToLower()) && _data[lang.ToString().ToLower()].TryGetValue(key, out var value))
         {
-            return value;
+            try
+            {
+                string result = string.Format(value, args);
+                return string.Format(value, args);
+            }
+            catch
+            {
+                return key;
+
+            }
+
         }
         return key;
     }

@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TelegramBot.Model;
-using TelegramBot.Sevices;
 
 namespace TelegramBot.Shared;
 

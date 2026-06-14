@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using OpenAI.Chat;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -40,7 +41,8 @@ class Program
         UserService userService = new(_dbContext);
         ExpensesService expensesService = new(_dbContext);
         CategoryService categoryService = new(_dbContext);
-        var handler = new Handler(botClient, userService, expensesService, categoryService);
+        IAiProvider aiProvider = new AiOllamaProvider();
+        var handler = new Handler(botClient, userService, expensesService, categoryService, aiProvider);
 
         botClient.StartReceiving(async (botClient, update, cancellationToken) =>
         {

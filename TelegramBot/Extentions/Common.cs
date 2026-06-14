@@ -8,12 +8,11 @@ public static class Common
     {
         public decimal? ParseAmount()
         {
-            var match = Regex.Match(str, @"\d+(\.\d+)?");
-
-            if (!match.Success)
+            var match = Regex.IsMatch(str, @"\d+[,.]?(\d+)?");
+            if (!match)
                 return null;
 
-            if (decimal.TryParse(match.Value, out var result))
+            if (decimal.TryParse(str, out var result))
                 return result;
 
             return null;

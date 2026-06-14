@@ -14,18 +14,21 @@ public class Handler
     UserService _userService { get; set; }
     ExpensesService _expensesService { get; set; }
     CategoryService _categoryService { get; set; }
+    IAiProvider _AiProvider { get; set; }
     ITelegramBotClient _botClient { get; set; }
 
-    public Handler(ITelegramBotClient botClient, UserService userService, ExpensesService expensesService, CategoryService categoryService)
+    public Handler(ITelegramBotClient botClient, UserService userService, ExpensesService expensesService, CategoryService categoryService, IAiProvider aiProvider)
     {
         _botClient = botClient;
         _userService = userService;
         _expensesService = expensesService;
         _categoryService = categoryService;
+        _AiProvider = aiProvider;
     }
 
     public async Task Handle(Update update, CancellationToken cancellationToken)
     {
+
         if (update.Type == UpdateType.CallbackQuery)
         {
             await HandleCallbackQueryType(_botClient, update, cancellationToken);
@@ -52,7 +55,7 @@ public class Handler
         if (Enum.TryParse<Language>(data, out var language))
         {
             await _userService.SetUserLang(update, (Language)language);
-           
+
         }
     }
 
@@ -157,13 +160,51 @@ public class Handler
         if (update.Message is not null)
         {
             var userId = update.Message.From?.Id;
+            var user = await _userService.GetOrCreateUser(update);
+            var userLang = await _userService.GetUserLang(update);
+            var selectedCategory = user.SelectedCategory;
             var amount = update.Message.Text.ParseAmount();
-            if (amount != null && userId is not null)
+            if (amount != null && userId is not null && selectedCategory is not null)
             {
-                var user = await _userService.GetOrCreateUser(update);
-                var selectedCategory = user.SelectedCategory;
+
                 var category = await _categoryService.GetCategory((CategoryType)selectedCategory);
                 await _expensesService.AddExpense(user, category, amount.Value);
+            }
+            if (amount == null && userId is not null)
+            {
+                await _botClient.SendChatAction(
+                    chatId: update.Message.Chat.Id,
+                    action: ChatAction.Typing);
+
+                var response = await _AiProvider.GetExpensesResponse(update.Message.Text);
+                if (response is null)
+                {
+                    await _botClient.SendMessage(
+                        chatId: update.Message.Chat.Id,
+                        text: _localizationService.Get("WarnMessage", userLang));
+
+                }
+                else
+                {
+                    try
+                    {
+                        var category = await _categoryService.GetCategory((CategoryType)response.ExpensesCategory);
+                        await _expensesService.AddExpense(user, category, response.Amount);
+                        string[] par = new[] { _localizationService.Get(category.Key, userLang), response.Amount.ToString() };
+                        await _botClient.SendMessage(
+                           chatId: update.Message.Chat.Id,
+                           text: _localizationService.Get("ExpensesUpdateMessage", userLang, par));
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        await _botClient.SendMessage(
+                            chatId: update.Message.Chat.Id,
+                            text: _localizationService.Get("ErrorMessage", userLang));
+                    }
+                }
+
             }
         }
     }

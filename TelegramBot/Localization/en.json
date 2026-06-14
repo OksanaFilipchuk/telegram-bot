@@ -12,6 +12,9 @@
   "Entertainment": "Entertainment",
   "Education": "Education",
   "Services": "Services",
+  "WarnMessage": "Sorry, I couldn't understand that. Please enter a valid expense amount or description.",
+  "ErrorMessage": "Sorry{0}, there was an error processing your expense. Please try again.",
+  "ExpensesUpdateMessage": "Category {0}, Amount: {1} have been updated successfully",
   "Other": "Other"
 
 }
