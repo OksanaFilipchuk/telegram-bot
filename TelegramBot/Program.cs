@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
-using OpenAI.Chat;
+using Serilog;
+using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -23,39 +24,56 @@ class Program
 
     static void Main(string[] args)
     {
+        Log.Logger = new LoggerConfiguration()
+           .MinimumLevel.Debug()
+           .WriteTo.File("logs/botapp.txt", rollingInterval: RollingInterval.Day)
+           .CreateLogger();
+
+
         var config = new ConfigurationBuilder().
             SetBasePath(Directory.GetCurrentDirectory()).
             AddJsonFile("appsettings.json");
 
         IConfigurationRoot configuration = config.Build();
+        try
+        {
+            string token = configuration["Bot:Token"];
 
-        string token = configuration["Bot:Token"];
+            botClient = new TelegramBotClient(token);
+            var me = botClient.GetMe().Result;
+            Console.WriteLine($"Bot id: {me.Id}, Bot Name: {me.FirstName}");
+            botClient.SetMyCommands(commands);
+            Log.Information($"Bot id: {me.Id}, Bot Name: {me.FirstName} is started");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred while initializing the bot");
+        }
 
-        botClient = new TelegramBotClient(token);
-
-        var me = botClient.GetMe().Result;
-        Console.WriteLine($"Bot id: {me.Id}, Bot Name: {me.FirstName}");
-        botClient.SetMyCommands(commands);
         _dbContext.Database.EnsureCreated();
 
         UserService userService = new(_dbContext);
         ExpensesService expensesService = new(_dbContext);
         CategoryService categoryService = new(_dbContext);
         IAiProvider aiProvider = new AiOllamaProvider();
-        var handler = new Handler(botClient, userService, expensesService, categoryService, aiProvider);
-
-        botClient.StartReceiving(async (botClient, update, cancellationToken) =>
+        if (botClient is not null)
         {
+            var handler = new Handler(botClient, userService, expensesService, categoryService, aiProvider);
 
-            await handler.Handle(update, cancellationToken);
-        }, ErrorHandler);
+            botClient.StartReceiving(async (botClient, update, cancellationToken) =>
+            {
+                await handler.Handle(update, cancellationToken);
 
+            }, ErrorHandler);
+        }
+        else
+        {
+            Console.WriteLine("Bot initialization failed");
+            Log.Error("Bot initialization failed");
+        }
         Console.WriteLine("Press any key to exit");
         Console.ReadKey();
     }
-
-
-
 
     public static async Task ErrorHandler(ITelegramBotClient botClient, Exception ex, HandleErrorSource handle, CancellationToken cancellationToken)
     {

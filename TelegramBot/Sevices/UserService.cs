@@ -45,7 +45,7 @@ public class UserService
         await _context.SaveChangesAsync();
     }
 
-    public async Task SetSelectedCategory(Update update, CategoryType category)
+    public async Task SetSelectedCategory(Update update, CategoryType? category)
     {
         var user = await GetOrCreateUser(update);
         user.SelectedCategory = category;

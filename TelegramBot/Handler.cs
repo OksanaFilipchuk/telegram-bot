@@ -1,4 +1,5 @@
-﻿using Telegram.Bot;
+﻿using Serilog;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -43,19 +44,27 @@ public class Handler
     }
     public async Task HandleCallbackQueryType(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        var userLang = await _userService.GetUserLang(update);
+        Language userLang = await _userService.GetUserLang(update);
         var data = update.CallbackQuery.Data;
+        var user = await _userService.GetOrCreateUser(update);
+
         if (Enum.TryParse<CategoryType>(data, out var category))
         {
             await _userService.SetSelectedCategory(update, category);
+            Log.Information("User {user.Id} selected cathegory have have been updated", user.Id);
             await botClient.SendMessage(
                 chatId: update.CallbackQuery.Message.Chat.Id,
                 text: _localizationService.Get("EnterExpenseAmount", userLang));
         }
+
         if (Enum.TryParse<Language>(data, out var language))
         {
+            Log.Information("User {user.Id} language have been updated", user.Id);
             await _userService.SetUserLang(update, (Language)language);
-
+            await botClient.SendMessage(
+                chatId: update.CallbackQuery.Message.Chat.Id,
+                text: _localizationService.Get("LanguageChangeMessage", language)
+                );
         }
     }
 
@@ -105,6 +114,7 @@ public class Handler
                 text: message,
                 parseMode: ParseMode.Html
                 );
+        Log.Information("Stats message sent to user UserId={user.Id}", user.Id);
 
     }
 
@@ -164,13 +174,20 @@ public class Handler
             var userLang = await _userService.GetUserLang(update);
             var selectedCategory = user.SelectedCategory;
             var amount = update.Message.Text.ParseAmount();
-            if (amount != null && userId is not null && selectedCategory is not null)
-            {
 
+            if (amount != null && selectedCategory is not null)
+            {
                 var category = await _categoryService.GetCategory((CategoryType)selectedCategory);
                 await _expensesService.AddExpense(user, category, amount.Value);
+                await _userService.SetSelectedCategory(update, null);
+                string[] par = new[] { _localizationService.Get(category.Key, userLang), amount.ToString() };
+                await _botClient.SendMessage(
+                   chatId: update.Message.Chat.Id,
+                   text: _localizationService.Get("ExpensesUpdateMessage", userLang, par)
+                   );
+                Log.Information("Expense added: UserId={UserId}, Category={Category}, Amount={Amount}", user.Id, category.Key, amount.Value);
             }
-            if (amount == null && userId is not null)
+            else
             {
                 await _botClient.SendChatAction(
                     chatId: update.Message.Chat.Id,
@@ -179,6 +196,7 @@ public class Handler
                 var response = await _AiProvider.GetExpensesResponse(update.Message.Text);
                 if (response is null)
                 {
+                    Log.Information("AI response is empty for UserId={UserId}", user.Id);
                     await _botClient.SendMessage(
                         chatId: update.Message.Chat.Id,
                         text: _localizationService.Get("WarnMessage", userLang));
@@ -186,25 +204,15 @@ public class Handler
                 }
                 else
                 {
-                    try
-                    {
-                        var category = await _categoryService.GetCategory((CategoryType)response.ExpensesCategory);
-                        await _expensesService.AddExpense(user, category, response.Amount);
-                        string[] par = new[] { _localizationService.Get(category.Key, userLang), response.Amount.ToString() };
-                        await _botClient.SendMessage(
-                           chatId: update.Message.Chat.Id,
-                           text: _localizationService.Get("ExpensesUpdateMessage", userLang, par));
-
-
-                    }
-                    catch (Exception ex)
-                    {
-                        await _botClient.SendMessage(
-                            chatId: update.Message.Chat.Id,
-                            text: _localizationService.Get("ErrorMessage", userLang));
-                    }
+                    var category = await _categoryService.GetCategory((CategoryType)response.ExpensesCategory);
+                    await _expensesService.AddExpense(user, category, response.Amount);
+                    Log.Information("Expense added: UserId={UserId}, Category={Category}, Amount={Amount}", user.Id, category.Key, response.Amount);
+                    string[] par = new[] { _localizationService.Get(category.Key, userLang), response.Amount.ToString() };
+                    await _botClient.SendMessage(
+                       chatId: update.Message.Chat.Id,
+                       text: _localizationService.Get("ExpensesUpdateMessage", userLang, par)
+                       );
                 }
-
             }
         }
     }
